@@ -45,7 +45,7 @@ const Start = ({ navigation }) => {
                 key={index}
                 accessible={true}
                 accessbilityRole="button"
-                accessibilityHint="Choose a background color for the chat screen"
+                accessibilityHint="let you choose a background color for the chat screen"
                 style={[
                   styles.colorButton,
                   { backgroundColor: color },
@@ -59,6 +59,9 @@ const Start = ({ navigation }) => {
           <TouchableOpacity
             style={styles.button}
             title="Start Chatting"
+            accessibilityLabel="Start Chatting"
+            accessbilityRole="button"
+            accessibilityHint="let you enter the chat"
             onPress={() =>
               navigation.navigate('Chat', {
                 name: name,
