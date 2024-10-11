@@ -101,7 +101,8 @@ const styles = StyleSheet.create({
     height: '44%',
     alignItems: 'center',
     justifyContent: 'space-around',
-    bottom: '10%', // pushes it closer to the bottom
+    bottom: '10%',
+    borderRadius: 5,
   },
   textInput: {
     width: '88%',
