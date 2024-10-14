@@ -9,13 +9,37 @@ import {
 } from 'react-native';
 import { useState } from 'react';
 
+import { getAuth, signInAnonymously } from 'firebase/auth';
+
 const Start = ({ navigation }) => {
+  // Initialize Firebase authentication
+  const auth = getAuth();
+
+  // Function to handle user sign-in using anonymous Firebase authentication
+  const signInUser = () => {
+    signInAnonymously(auth)
+      .then((result) => {
+        // Navigate to the Chat screen, passing the user ID, name, and background color
+        navigation.navigate('Chat', {
+          userID: result.user.uid,
+          name,
+          backgroundColor: background || defaultBackgroundColor,
+        });
+        Alert.alert('Signed in Successfully!');
+      })
+      .catch((error) => {
+        Alert.alert('Unable to sign in, try later again.');
+      });
+  };
   // useState hook to manage the user's name input
   const [name, setName] = useState('');
   // Predefined array of colors for the user to choose as the chat background
   const colors = ['#313cb5', '#b52721', '#faca82', '#9cd9f0'];
   // useState hook to manage the selected background color
   const [background, setBackground] = useState('');
+
+  // Default background color when user pick no color
+  const defaultBackgroundColor = '#9cd9f0';
 
   return (
     // Main container that holds all elements and applies styles to center them on the screen
@@ -44,7 +68,7 @@ const Start = ({ navigation }) => {
               <TouchableOpacity
                 key={index}
                 accessible={true}
-                accessbilityRole="button"
+                accessibilityRole="button"
                 accessibilityHint="let you choose a background color for the chat screen"
                 style={[
                   styles.colorButton,
@@ -62,12 +86,7 @@ const Start = ({ navigation }) => {
             accessibilityLabel="Start Chatting"
             accessbilityRole="button"
             accessibilityHint="let you enter the chat"
-            onPress={() =>
-              navigation.navigate('Chat', {
-                name: name,
-                background: background,
-              })
-            }
+            onPress={signInUser}
           >
             <Text style={styles.buttonText}>Start Chatting</Text>
           </TouchableOpacity>
