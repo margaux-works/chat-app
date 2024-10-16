@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Chat = ({ route, navigation, db, isConnected }) => {
   // Extracting 'name' and 'background' passed from the previous screen via route parameters
-  const { name, background, userID } = route.params;
+  const { name, backgroundColor, userID } = route.params;
 
   // State to store the messages in the chat
   const [messages, setMessages] = useState([]);
@@ -106,7 +106,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
 
   return (
     // Main container for the chat screen, applies dynamic background color from props
-    <View style={[styles.container, { backgroundColor: background }]}>
+    <View style={[styles.container, { backgroundColor: backgroundColor }]}>
       {/* GiftedChat component that handles the chat interface */}
       <GiftedChat
         messages={messages}

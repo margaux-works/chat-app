@@ -5,7 +5,7 @@ import {
   Text,
   TouchableOpacity,
   ImageBackground,
-  Image,
+  Alert,
 } from 'react-native';
 import { useState } from 'react';
 
