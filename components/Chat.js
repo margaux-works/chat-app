@@ -1,6 +1,6 @@
 import { StyleSheet, View, Platform, KeyboardAvoidingView } from 'react-native';
 import { useEffect, useState } from 'react';
-import { GiftedChat, Bubble } from 'react-native-gifted-chat';
+import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
 import {
   orderBy,
   onSnapshot,
@@ -8,8 +8,9 @@ import {
   collection,
   query,
 } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Chat = ({ route, navigation, db }) => {
+const Chat = ({ route, navigation, db, isConnected }) => {
   // Extracting 'name' and 'background' passed from the previous screen via route parameters
   const { name, background, userID } = route.params;
 
@@ -43,6 +44,46 @@ const Chat = ({ route, navigation, db }) => {
     navigation.setOptions({ title: name });
   });
 
+  let unsubMessages;
+
+  useEffect(() => {
+    if (isConnected === true) {
+      if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+
+      const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+      unsubMessages = onSnapshot(q, (DocumentSnapshot) => {
+        let newMessages = [];
+        DocumentSnapshot.forEach((doc) => {
+          newMessages.push({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: new Date(doc.data().createdAt.toMillis()), // Convert Firestore timestamp to JavaScript Date object
+          });
+        });
+        cacheMessages(newMessages);
+        setMessages(newMessages);
+      });
+    } else loadMessages();
+
+    return () => {
+      if (unsubMessages) unsubMessages();
+    };
+  }, [isConnected]);
+
+  const cacheMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const loadMessages = async () => {
+    const cachedMessages = (await AsyncStorage.getItem('messages')) || [];
+    setMessages(JSON.parse(cachedMessages));
+  };
+
   // Fetch messages from Firebase Firestore and listen for real-time updates
   useEffect(() => {
     const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc')); // Query messages from Firestore, ordered by creation date in descending order
@@ -74,6 +115,13 @@ const Chat = ({ route, navigation, db }) => {
         user={{
           _id: userID,
           name: name,
+        }}
+        // Conditionally render the InputToolbar based on the connection status
+        renderInputToolbar={(props) => {
+          if (!isConnected) {
+            return null;
+          }
+          return <InputToolbar {...props} />;
         }}
       />
 
