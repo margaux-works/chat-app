@@ -44,8 +44,8 @@ The **Chat App** is a mobile application built with React Native that allows use
 
 ## Screenshots
 
-![Start Screen](./assets/start-screen.png)
-![Chat Screen](./assets/chat-screen.png)
+<img src="./assets/start-screen.png" alt="Start Screen" width="400" />
+<img src="./assets/chat-screen.png" alt="Chat Screen" width="400" />
 
 ## Scenarios (Given-When-Then)
 
@@ -196,14 +196,14 @@ service firebase.storage {
 
 Here are the main libraries that this app depends on:
 
-React Native - 18.2.0
-Expo - 51.0.38
-Firebase - 10.3.1
-Gifted Chat - 2.6.4
-React Native Maps - 1.14.0
-Async Storage - 1.23.1
-Expo Image Picker - 15.0.7
-Expo Location - 17.0.1
+- React Native - 18.2.0
+- Expo - 51.0.38
+- Firebase - 10.3.1
+- Gifted Chat - 2.6.4
+- React Native Maps - 1.14.0
+- Async Storage - 1.23.1
+- Expo Image Picker - 15.0.7
+- Expo Location - 17.0.1
 
 ## Contributing
 
