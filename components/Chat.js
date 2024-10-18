@@ -9,13 +9,57 @@ import {
   query,
 } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomActions from './CustomActions';
+import MapView from 'react-native-maps';
 
-const Chat = ({ route, navigation, db, isConnected }) => {
+const Chat = ({ route, navigation, db, isConnected, storage }) => {
   // Extracting 'name' and 'background' passed from the previous screen via route parameters
   const { name, backgroundColor, userID } = route.params;
 
   // State to store the messages in the chat
   const [messages, setMessages] = useState([]);
+
+  let unsubMessages;
+
+  useEffect(() => {
+    navigation.setOptions({ title: name });
+
+    if (isConnected === true) {
+      if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+
+      const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+      unsubMessages = onSnapshot(q, (docs) => {
+        let newMessages = [];
+        docs.forEach((doc) => {
+          newMessages.push({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: new Date(doc.data().createdAt.toMillis()), // Convert Firestore timestamp to JavaScript Date object
+          });
+        });
+        cacheMessages(newMessages);
+        setMessages(newMessages);
+      });
+    } else loadMessages();
+
+    return () => {
+      if (unsubMessages) unsubMessages();
+    };
+  }, [isConnected]);
+
+  const loadMessages = async () => {
+    const cachedMessages = (await AsyncStorage.getItem('messages')) || [];
+    setMessages(JSON.parse(cachedMessages));
+  };
+
+  const cacheMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
   // Function that sends new messages and saves them to Firebase Firestor
   const onSend = (newMessages) => {
@@ -39,70 +83,33 @@ const Chat = ({ route, navigation, db, isConnected }) => {
     );
   };
 
-  // Set the title of the chat screen to the user's name when the component mounts
-  useEffect(() => {
-    navigation.setOptions({ title: name });
-  });
+  const renderCustomActions = (props) => {
+    return (
+      <CustomActions
+        storage={storage}
+        userID={userID}
+        onSend={onSend}
+        {...props}
+      />
+    );
+  };
 
-  let unsubMessages;
-
-  useEffect(() => {
-    if (isConnected === true) {
-      if (unsubMessages) unsubMessages();
-      unsubMessages = null;
-
-      const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
-      unsubMessages = onSnapshot(q, (DocumentSnapshot) => {
-        let newMessages = [];
-        DocumentSnapshot.forEach((doc) => {
-          newMessages.push({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: new Date(doc.data().createdAt.toMillis()), // Convert Firestore timestamp to JavaScript Date object
-          });
-        });
-        cacheMessages(newMessages);
-        setMessages(newMessages);
-      });
-    } else loadMessages();
-
-    return () => {
-      if (unsubMessages) unsubMessages();
-    };
-  }, [isConnected]);
-
-  const cacheMessages = async (messagesToCache) => {
-    try {
-      await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
-    } catch (error) {
-      console.log(error.message);
+  const renderCustomView = (props) => {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <MapView
+          style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
     }
   };
-
-  const loadMessages = async () => {
-    const cachedMessages = (await AsyncStorage.getItem('messages')) || [];
-    setMessages(JSON.parse(cachedMessages));
-  };
-
-  // Fetch messages from Firebase Firestore and listen for real-time updates
-  useEffect(() => {
-    const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc')); // Query messages from Firestore, ordered by creation date in descending order
-    const unsubMessages = onSnapshot(q, (DocumentSnapshot) => {
-      // Listens for real-time updates from Firestore
-      let newMessages = [];
-      DocumentSnapshot.forEach((doc) => {
-        newMessages.push({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: new Date(doc.data().createdAt.toMillis()), // Convert Firestore timestamp to JavaScript Date object
-        });
-        setMessages(newMessages); // Updates the local state with the fetched messages from Firestore
-      });
-      return () => {
-        if (unsubMessages) unsubMessages(); // Cleanup function to unsubscribe from Firestore updates when the component unmounts
-      };
-    });
-  }, []);
 
   return (
     // Main container for the chat screen, applies dynamic background color from props
@@ -116,6 +123,8 @@ const Chat = ({ route, navigation, db, isConnected }) => {
           _id: userID,
           name: name,
         }}
+        renderActions={renderCustomActions}
+        renderCustomView={renderCustomView}
         // Conditionally render the InputToolbar based on the connection status
         renderInputToolbar={(props) => {
           if (!isConnected) {
