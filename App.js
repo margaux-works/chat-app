@@ -43,9 +43,12 @@ const App = () => {
   // Initialize Firebase Storage handler
   const storage = getStorage(app);
 
-  // New | checks is user is offline or online
+  // Use NetInfo hook to monitor network connection status (online/offline)
   const connectionStatus = useNetInfo();
 
+  // useEffect hook to handle network status changes
+  // If the user is offline, disable Firestore's network access
+  // If the user is online, re-enable Firestore's network access
   useEffect(() => {
     if (connectionStatus.isConnected === false) {
       Alert.alert('Connection Lost');

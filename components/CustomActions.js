@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
+// CustomActions component responsible for displaying options to send images or location
 const CustomActions = ({
   wrapperStyle,
   iconTextStyle,
@@ -11,8 +12,9 @@ const CustomActions = ({
   userID,
   storage,
 }) => {
-  const actionSheet = useActionSheet();
+  const actionSheet = useActionSheet(); // Hook to display an action sheet
 
+  // Function to handle the selection of different options from the action sheet
   const onActionPress = () => {
     const options = [
       'Choose from Library',
@@ -20,7 +22,9 @@ const CustomActions = ({
       'Send Location',
       'Cancel',
     ];
-    const cancelButtonIndex = options.length - 1;
+    const cancelButtonIndex = options.length - 1; // Index of the cancel button
+
+    // Displaying the action sheet with options
     actionSheet.showActionSheetWithOptions(
       {
         options,
@@ -48,21 +52,23 @@ const CustomActions = ({
   // Function to generate a unique reference string for the image
   const generateReference = (uri) => {
     const timeStamp = new Date().getTime();
-    const imageName = uri.split('/')[uri.split('/').length - 1];
+    const imageName = uri.split('/')[uri.split('/').length - 1]; // Extract the image name from its URI
     return `${userID}-${timeStamp}-${imageName}`;
   };
 
+  // Function to upload the image to Firebase storage and send the image URL in the chat
   const uploadAndSendImage = async (imageURI) => {
-    const uniqueRefString = generateReference(imageURI);
-    const response = await fetch(imageURI);
-    const blob = await response.blob();
-    const newUploadRef = ref(storage, uniqueRefString);
+    const uniqueRefString = generateReference(imageURI); // Generate unique reference for the image
+    const response = await fetch(imageURI); // Fetch the image data
+    const blob = await response.blob(); // Convert image data to Blob format
+    const newUploadRef = ref(storage, uniqueRefString); // Create a reference in Firebase storage
     uploadBytes(newUploadRef, blob).then(async (snapshot) => {
+      // Upload the image to Firebase
       console.log('File has been uploaded successfully');
-      const imageURL = await getDownloadURL(snapshot.ref);
+      const imageURL = await getDownloadURL(snapshot.ref); // Get the downloadable URL of the uploaded image
       onSend([
         {
-          _id: `${userID}-${new Date().getTime()}`, // Generate a unique ID
+          _id: `${userID}-${new Date().getTime()}`, // Generate a unique message ID
           createdAt: new Date(),
           user: {
             _id: userID,
@@ -74,6 +80,7 @@ const CustomActions = ({
     });
   };
 
+  // Function to pick an image from the user's library
   const pickImage = async () => {
     let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissions?.granted) {
@@ -83,6 +90,7 @@ const CustomActions = ({
     }
   };
 
+  // Function to take a photo using the camera
   const takePhoto = async () => {
     let permissions = await ImagePicker.requestCameraPermissionsAsync();
     if (permissions?.granted) {
@@ -92,6 +100,7 @@ const CustomActions = ({
     }
   };
 
+  // Function to get the user's current location
   const getLocation = async () => {
     let permissions = await Location.requestForegroundPermissionsAsync();
     console.log('Location permission status:', permissions);

@@ -13,22 +13,26 @@ import CustomActions from './CustomActions';
 import MapView from 'react-native-maps';
 
 const Chat = ({ route, navigation, db, isConnected, storage }) => {
-  // Extracting 'name' and 'background' passed from the previous screen via route parameters
+  // Destructure parameters passed via route from the previous screen (name, backgroundColor, userID)
   const { name, backgroundColor, userID } = route.params;
 
-  // State to store the messages in the chat
+  //  State to store messages fetched from Firestore or local storage (offline mode)
   const [messages, setMessages] = useState([]);
 
-  let unsubMessages;
+  let unsubMessages; // Variable to store the listener that will be used to unsubscribe from Firestore messages
 
   useEffect(() => {
+    // Set the navigation bar title to the user's name when they enter the chat screen
     navigation.setOptions({ title: name });
 
+    // If user is connected to the internet, set up Firestore listener to fetch new messages
     if (isConnected === true) {
-      if (unsubMessages) unsubMessages();
+      if (unsubMessages) unsubMessages(); // Cleanup any previous listener
       unsubMessages = null;
 
       const q = query(collection(db, 'messages'), orderBy('createdAt', 'desc'));
+
+      // Set up a real-time listener to Firestore that updates messages whenever the database changes
       unsubMessages = onSnapshot(q, (docs) => {
         let newMessages = [];
         docs.forEach((doc) => {
@@ -41,18 +45,23 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
         cacheMessages(newMessages);
         setMessages(newMessages);
       });
-    } else loadMessages();
+    }
+    // If offline, load cached messages from AsyncStorage
+    else loadMessages();
 
+    // Cleanup function to unsubscribe from Firestore when the component unmounts or connection status changes
     return () => {
       if (unsubMessages) unsubMessages();
     };
   }, [isConnected]);
 
+  //  Load cached messages from AsyncStorage when offline
   const loadMessages = async () => {
     const cachedMessages = (await AsyncStorage.getItem('messages')) || [];
     setMessages(JSON.parse(cachedMessages));
   };
 
+  // Save messages to AsyncStorage for offline access
   const cacheMessages = async (messagesToCache) => {
     try {
       await AsyncStorage.setItem('messages', JSON.stringify(messagesToCache));
@@ -61,7 +70,7 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     }
   };
 
-  // Function that sends new messages and saves them to Firebase Firestor
+  // Function to handle sending new messages, which saves them to Firestore
   const onSend = (newMessages) => {
     addDoc(collection(db, 'messages'), newMessages[0]); // Adds the first new message to the Firestore 'messages' collection
   };
@@ -83,6 +92,7 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     );
   };
 
+  // Render custom action buttons (e.g., image picker, location sharing)
   const renderCustomActions = (props) => {
     return (
       <CustomActions
@@ -94,6 +104,7 @@ const Chat = ({ route, navigation, db, isConnected, storage }) => {
     );
   };
 
+  // Render custom view for showing map location if a message contains a location object
   const renderCustomView = (props) => {
     const { currentMessage } = props;
     if (currentMessage.location) {
